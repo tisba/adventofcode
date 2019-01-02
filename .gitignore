@@ -4,6 +4,10 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# sandbox, profiling and debugging
+sandbox/*
+profile*.svg
+
 # binaries
 day01/day01
 day02/day02
