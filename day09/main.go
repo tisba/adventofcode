@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/ring"
 	"fmt"
 	"strconv"
 )
@@ -10,67 +11,56 @@ type player struct {
 }
 
 type board struct {
-	current int
-	marbles []int
+	marbles *ring.Ring
 }
 
 func (b *board) set(value int) (score int) {
 	if value%23 != 0 {
-		pos := -1
-		if b.current == 0 && value == 1 {
-			pos = 1
-		} else {
-			pos = b.current + 1
-			if pos >= len(b.marbles) {
-				pos = 0
-			}
-			pos++
-		}
-
-		// log.Printf("current is %v | Target pos for %v is %v\n", b.current, value, pos)
-
-		b.marbles = append(b.marbles, 0)
-		copy(b.marbles[pos+1:], b.marbles[pos:])
-		b.marbles[pos] = value
-
-		b.current = pos
+		// insert at CW-1
+		b.marbles = b.marbles.Move(1)
+		s := ring.New(1)
+		s.Value = value
+		b.marbles.Link(s)
 	} else {
-		i := b.current - 7
+		// go to marble CCW-7
+		b.marbles = b.marbles.Move(-8)
 
-		if i < 0 {
-			i = len(b.marbles) + i
-		}
-
-		score = value + b.marbles[i]
-
-		b.marbles = append(b.marbles[:i], b.marbles[i+1:]...)
-
-		b.current = i
+		// remove and add build score
+		removed := b.marbles.Unlink(1)
+		score = value + removed.Value.(int)
 	}
+
+	// new current is always CW-1
+	b.marbles = b.marbles.Move(1)
 
 	return
 }
 
-func (b board) String() string {
-	out := ""
-
-	for i, m := range b.marbles {
-		if i != b.current {
-			out += "" + fmt.Sprintf("%3v", strconv.Itoa(m)) + " "
+func (b board) String() (out string) {
+	current := b.marbles.Value.(int)
+	b.marbles.Do(func(m interface{}) {
+		value := m.(int)
+		if value == current {
+			out += "" + fmt.Sprintf("%4s", "("+strconv.Itoa(value)+")") + " "
 		} else {
-			out += "" + fmt.Sprintf("%4v", "("+strconv.Itoa(m)+")") + " "
+			out += "" + fmt.Sprintf("%3s", strconv.Itoa(value)) + " "
 		}
-	}
+	})
 
 	return out
 }
 
-func highestScore(playersCount, highestMarble int, showBoard bool) int {
-	b := board{
-		current: 0,
-		marbles: make([]int, 1, 100000),
-		// marbles: []int{0},
+func buildBoard() (b board) {
+	b = board{
+		marbles: ring.New(1),
 	}
+	b.marbles.Value = 0
+
+	return
+}
+
+func highestScore(playersCount, highestMarble int, showBoard bool) int {
+	b := buildBoard()
 
 	players := make([]player, playersCount)
 
@@ -78,19 +68,13 @@ func highestScore(playersCount, highestMarble int, showBoard bool) int {
 		fmt.Println(b)
 	}
 
-	currentPlayer := 0
 	for marbleIdx := 1; marbleIdx <= highestMarble; marbleIdx++ {
-		score := b.set(marbleIdx)
+		currentPlayer := marbleIdx % playersCount
 
-		players[currentPlayer].score += score
+		players[currentPlayer].score += b.set(marbleIdx)
 
 		if showBoard {
 			fmt.Println(b)
-		}
-
-		currentPlayer++
-		if currentPlayer >= len(players) {
-			currentPlayer = 0
 		}
 	}
 
@@ -105,15 +89,26 @@ func highestScore(playersCount, highestMarble int, showBoard bool) int {
 }
 
 func main() {
-	// -- Test Input
-	// playersCount := 17
-	// highestMarble := 1104
+	// -- Test Inputs
+	playersCount := 9
+	highestMarble := 25
+	showBoard := true
+
+	// playersCount = 17
+	// highestMarble = 1104
 	// showBoard = true
 
-	// -- Puzzle Input
-	playersCount := 438
-	highestMarble := 71626
-	showBoard := false
+	// -- Puzzle A
+	playersCount = 438
+	highestMarble = 71626
+	showBoard = false
 
-	fmt.Printf("Highest player score is %v\n", highestScore(playersCount, highestMarble, showBoard))
+	fmt.Printf("A: Highest player score is %v\n", highestScore(playersCount, highestMarble, showBoard))
+
+	// -- Puzzle B
+	playersCount = 438
+	highestMarble = 71626 * 100
+	showBoard = false
+
+	fmt.Printf("B: Highest player score is %v\n", highestScore(playersCount, highestMarble, showBoard))
 }
