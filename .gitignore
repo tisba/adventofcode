@@ -8,6 +8,8 @@
 sandbox/*
 profile*.svg
 
+*/tmp/
+
 # binaries
 day01/day01
 day02/day02
