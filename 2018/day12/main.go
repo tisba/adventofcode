@@ -6,7 +6,7 @@ import (
 	"math"
 	"regexp"
 
-	"github.com/tisba/adventofcode-2018/utils"
+	"github.com/tisba/adventofcode/utils"
 )
 
 type State struct {

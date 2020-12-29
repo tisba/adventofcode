@@ -12,7 +12,7 @@ import (
 	"strconv"
 
 	"github.com/otiai10/gosseract"
-	"github.com/tisba/adventofcode-2018/utils"
+	"github.com/tisba/adventofcode/utils"
 )
 
 type Field []*Point

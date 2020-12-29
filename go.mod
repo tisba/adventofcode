@@ -1,4 +1,4 @@
-module github.com/tisba/adventofcode-2018
+module github.com/tisba/adventofcode
 
 go 1.12
 

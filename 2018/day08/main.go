@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	utils "github.com/tisba/adventofcode-2018/utils"
+	utils "github.com/tisba/adventofcode/utils"
 )
 
 func main() {
