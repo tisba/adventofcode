@@ -1,9 +1,0 @@
-language: go
-go:
-  - "1.11.x"
-script: >
-  cd day01 && go test -v --bench . --benchmem --cover && cd ..;
-  cd day02 && go test -v --bench . --benchmem --cover && cd ..;
-  cd day03 && go test -v --bench . --benchmem --cover && cd ..;
-  cd day04 && go test -v --bench . --benchmem --cover && cd ..;
-  cd day05 && go test -v --bench . --benchmem --cover && cd ..
