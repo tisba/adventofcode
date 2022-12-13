@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sort"
 	"strconv"
 
 	"github.com/tisba/adventofcode/utils"
@@ -13,14 +14,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	max := 0
 	current := 0
+	totals := make([]int, 0)
 	for _, line := range lines {
 		if line == "" {
-			if current > max {
-				max = current
-			}
-
+			totals = append(totals, current)
 			current = 0
 			continue
 		}
@@ -33,5 +31,12 @@ func main() {
 		current += calories
 	}
 
-	log.Println(max)
+	sort.Ints(totals)
+	sum := 0
+	for _, c := range totals[len(totals)-3:] {
+		sum += c
+	}
+
+	log.Printf("Max: %v\n", totals[len(totals)-1])
+	log.Printf("Sum Top 3: %v\n", sum)
 }
