@@ -11,10 +11,7 @@ class AoC::Day04
       count_overlap = 0
 
       input.each_line do |line|
-        a, b = line.split(",")
-
-        range_a = Range.new(*a.split("-").map(&:to_i))
-        range_b = Range.new(*b.split("-").map(&:to_i))
+        range_a, range_b = line.split(",").map { |x| Range.new(*x.split("-").map(&:to_i)) }
 
         count_cover += 1 if range_a.cover?(range_b) || range_b.cover?(range_a)
         count_overlap += 1 if overlaps?(range_a, range_b)
