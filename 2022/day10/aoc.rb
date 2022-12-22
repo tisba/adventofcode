@@ -8,27 +8,47 @@ class AoC::Day10
   class << self
     def call(input:)
       x = 1
-      c = 0
-      probe = []
+      c = 1
+      probes = []
+      crt_rows = []
+      current_row = []
+
+      cycle = -> () do
+        probes << c * x if (c-20) % 40 == 0
+
+        if current_row.length == 40
+          crt_rows << current_row
+          current_row = []
+        end
+
+        col = (c - 1) % 40
+        lit = ((x-1)..(x+1)).include?(col)
+        current_row << (lit ? "#" : ".")
+
+        c += 1
+      end
+
       input.each_line do |line|
         command, arg = line.split
 
         if command == "noop"
-          c += 1
-          probe << [c, x] if (c-20) % 40 == 0
+          cycle.call
         end
 
         if command == "addx"
-          c += 1
-          probe << [c, x] if (c-20) % 40 == 0
-          c += 1
-          probe << [c, x] if (c-20) % 40 == 0
+          cycle.call
+          cycle.call
 
           x += arg.to_i
         end
       end
 
-      [ probe.sum { |(c, x)| c * x }, nil ]
+      cycle.call
+
+      [
+        probes.sum,
+        crt_rows.map { |row| row.join("") }
+      ]
     end
   end
 end
@@ -46,12 +66,34 @@ RSpec.describe AoC::Day10 do
   context "with test input" do
     subject { described_class.call(input: Pathname.new(__dir__).join("input_test.txt")) }
 
-    it { expect(subject).to eq([13140, nil]) }
+    let(:screen_rows) do
+      %w(
+      ##..##..##..##..##..##..##..##..##..##..
+      ###...###...###...###...###...###...###.
+      ####....####....####....####....####....
+      #####.....#####.....#####.....#####.....
+      ######......######......######......####
+      #######.......#######.......#######.....
+      )
+    end
+
+    it { expect(subject).to eq([13140, screen_rows]) }
   end
 
   context "with input" do
     subject { described_class.call(input: Pathname.new(__dir__).join("input.txt")) }
 
-    it { expect(subject).to eq([nil, nil]) }
+    let(:screen_rows) do
+      %w(
+      ####.#....###..#....####..##..####.#....
+      #....#....#..#.#.......#.#..#....#.#....
+      ###..#....#..#.#......#..#......#..#....
+      #....#....###..#.....#...#.##..#...#....
+      #....#....#....#....#....#..#.#....#....
+      ####.####.#....####.####..###.####.####.
+      )
+    end
+
+    it { expect(subject).to eq([14780, screen_rows]) }
   end
 end
