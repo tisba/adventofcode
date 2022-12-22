@@ -31,7 +31,7 @@ gemfile do
   gem "rspec"
 end
 
-require "rspec/autorun"
+require "rspec/autorun" if Pathname.new($0).basename.to_s != "rspec"
 
 RSpec.describe AoC::Day06 do
   context "with test input" do
