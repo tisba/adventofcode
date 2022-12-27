@@ -32,7 +32,17 @@ class AoC::Day12
     end
 
     def add_edge(source, target, weight: 1)
-      connect_graph(source, target, weight)
+      # noop if we already have an edge in the other direction
+      # TODO: Why does this not work?
+      # return unless graph.dig(target, source).nil?
+
+      nodes << source
+      nodes << target
+
+      graph[source] ||= {}
+      graph[source][target] = weight
+
+      graph[target] ||= {}
     end
 
     def to_dot
@@ -53,7 +63,7 @@ class AoC::Day12
     end
 
     # based of wikipedia's pseudocode: http://en.wikipedia.org/wiki/Dijkstra's_algorithm
-    def dijkstra(source)
+    def dijkstra(source, target: nil)
       distance = {}
       previous = {}
       queue = Set.new
@@ -65,8 +75,15 @@ class AoC::Day12
 
       distance[source] = 0
 
+      seen = []
+
       until queue.empty? do
         current = queue.min_by { |n| distance[n] }
+
+        if target
+          return previous if current == target
+        end
+
         queue.delete(current)
 
         graph[current].keys.each do |vertex|
@@ -82,13 +99,6 @@ class AoC::Day12
       previous
     end
 
-    def shortest(from:, to:)
-      from = Node.new(from) unless from === Node
-      to = Node.new(to) unless to === Node
-
-      to_path(dijkstra(from), from, to)
-    end
-
     def to_path(prev, start, target)
       return [] unless prev[target]
 
@@ -102,21 +112,6 @@ class AoC::Day12
 
       path.reverse
     end
-
-
-    private
-
-    def connect_graph(source, target, weight)
-      # return if graph.dig(target, source)
-
-      nodes << source
-      nodes << target
-
-      graph[source] ||= {}
-      graph[source][target] = weight
-
-      graph[target] ||= {}
-    end
   end
 
 
@@ -125,7 +120,6 @@ class AoC::Day12
   class << self
     def call(input:, debug: false, only_part_one: false)
       map = Map.new
-      movement = Graph.new
       start, dest = nil
 
       input.each_line.each_with_index do |line, y|
@@ -145,7 +139,43 @@ class AoC::Day12
         map.print
       end
 
-      can_go = -> (from, to) { to && (from >= to || from == to - 1) }
+      movement = build_graph(map, -> (from, to) { to && (from >= to || from == to - 1) })
+
+      start_node = Graph::Node.new(start)
+      dest_node = Graph::Node.new(dest)
+      dijkstra = movement.dijkstra(start_node, target: dest_node)
+
+      # part 1: from start to dest in shortest path
+      shortest_path_part_one = movement.to_path(dijkstra, start_node, dest_node)
+
+      movement = build_graph(map, -> (from, to) { to && (to >= from || from == to + 1) })
+
+      dest_node = Graph::Node.new(dest)
+      dijkstra = movement.dijkstra(dest_node)
+
+      lengths = []
+      map.each_with_index do |row, y|
+        row.each_with_index do |current, x|
+          next if current > 0
+
+          start_node = Graph::Node.new([x, y])
+
+          shortest_path = movement.to_path(dijkstra, dest_node, start_node)
+
+          unless shortest_path.empty?
+            lengths << shortest_path.length
+          end
+        end
+      end
+
+      [
+        shortest_path_part_one.count - 1,
+        lengths.min - 1,
+      ]
+    end
+
+    def build_graph(map, can_go)
+      movement = Graph.new
 
       map.each_with_index do |row, y|
         row.each_with_index do |current, x|
@@ -165,40 +195,7 @@ class AoC::Day12
         end
       end
 
-      # part 1: from start to dest in shortest path
-      shortest_path = movement.shortest(from: start, to: dest)
-
-      unless only_part_one
-        # part 2 hacking...
-        lengths = []
-        foo = []
-        map.each_with_index do |row, y|
-          row.each_with_index do |current, x|
-            STDOUT.write "."
-            next unless current == 0
-            if foo.include?([x, y])
-              STDOUT.write "S"
-              next
-            end
-
-            path = movement.shortest(from: [x, y], to: dest)
-
-            if path.count == 0
-              puts "\nno path from #{[x, y]} to #{dest}"
-              foo << [x, y]
-            else
-              lengths << path.count - 1
-            end
-          end
-        end
-
-        new_route_steps = lengths.min
-      end
-
-      [
-        shortest_path.count - 1,
-        new_route_steps,
-      ]
+      movement
     end
   end
 end
@@ -222,6 +219,6 @@ RSpec.describe AoC::Day12 do
   context "with input" do
     subject { described_class.call(input: Pathname.new(__dir__).join("input.txt"), only_part_one: true) }
 
-    it { expect(subject).to eq([449, nil]) }
+    it { expect(subject).to eq([449, 443]) }
   end
 end
