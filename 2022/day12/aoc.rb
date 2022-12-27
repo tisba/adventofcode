@@ -24,21 +24,13 @@ class AoC::Day12
       end
     end
 
-    attr_reader :graph, :nodes
+    attr_reader :graph
 
     def initialize
       @graph = {} # the graph // {node => { edge1 => weight, edge2 => weight}, node2 => ...
-      @nodes = Set.new
     end
 
     def add_edge(source, target, weight: 1)
-      # noop if we already have an edge in the other direction
-      # TODO: Why does this not work?
-      # return unless graph.dig(target, source).nil?
-
-      nodes << source
-      nodes << target
-
       graph[source] ||= {}
       graph[source][target] = weight
 
@@ -63,25 +55,24 @@ class AoC::Day12
     end
 
     # based of wikipedia's pseudocode: http://en.wikipedia.org/wiki/Dijkstra's_algorithm
-    def dijkstra(source, target: nil)
+    def dijkstra(source, targets: nil)
       distance = {}
       previous = {}
       queue = Set.new
+      targets = [targets].flatten if targets
 
-      nodes.each do |node|
+      graph.keys.each do |node|
         distance[node] = Float::INFINITY
         queue.add(node)
       end
 
       distance[source] = 0
 
-      seen = []
-
       until queue.empty? do
         current = queue.min_by { |n| distance[n] }
 
-        if target
-          return previous if current == target
+        if targets
+          return previous if targets.include?(current)
         end
 
         queue.delete(current)
@@ -99,18 +90,18 @@ class AoC::Day12
       previous
     end
 
-    def to_path(prev, start, target)
-      return [] unless prev[target]
+    def distance(prev, start, target)
+      return 0 unless prev[target]
 
-      path = []
+      steps = 0
       current = target
 
       while current
-        path << current
+        steps += 1
         current = prev[current]
       end
 
-      path.reverse
+      steps - 1
     end
   end
 
@@ -118,7 +109,7 @@ class AoC::Day12
 
 
   class << self
-    def call(input:, debug: false, only_part_one: false)
+    def call(input:, debug: false)
       map = Map.new
       start, dest = nil
 
@@ -143,34 +134,31 @@ class AoC::Day12
 
       start_node = Graph::Node.new(start)
       dest_node = Graph::Node.new(dest)
-      dijkstra = movement.dijkstra(start_node, target: dest_node)
+      dijkstra = movement.dijkstra(start_node, targets: dest_node)
 
       # part 1: from start to dest in shortest path
-      shortest_path_part_one = movement.to_path(dijkstra, start_node, dest_node)
+      shortest_path_part_one = movement.distance(dijkstra, start_node, dest_node)
 
+      # part 2:
       movement = build_graph(map, -> (from, to) { to && (to >= from || from == to + 1) })
 
-      dest_node = Graph::Node.new(dest)
-      dijkstra = movement.dijkstra(dest_node)
-
-      lengths = []
-      map.each_with_index do |row, y|
-        row.each_with_index do |current, x|
+      start_node_candidates = map.each_with_index.flat_map do |row, y|
+        row.each_with_index.flat_map do |current, x|
           next if current > 0
 
-          start_node = Graph::Node.new([x, y])
-
-          shortest_path = movement.to_path(dijkstra, dest_node, start_node)
-
-          unless shortest_path.empty?
-            lengths << shortest_path.length
-          end
+          Graph::Node.new([x, y])
         end
+      end.compact
+
+      dijkstra = movement.dijkstra(dest_node, targets: start_node_candidates)
+
+      distances = start_node_candidates.map do |start_node|
+        movement.distance(dijkstra, start_node, start_node)
       end
 
       [
-        shortest_path_part_one.count - 1,
-        lengths.min - 1,
+        shortest_path_part_one,
+        distances.compact.reject(&:zero?).min,
       ]
     end
 
@@ -217,7 +205,7 @@ RSpec.describe AoC::Day12 do
   end
 
   context "with input" do
-    subject { described_class.call(input: Pathname.new(__dir__).join("input.txt"), only_part_one: true) }
+    subject { described_class.call(input: Pathname.new(__dir__).join("input.txt")) }
 
     it { expect(subject).to eq([449, 443]) }
   end
