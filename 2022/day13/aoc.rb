@@ -8,62 +8,60 @@ class AoC; end
 class AoC::Day13
   class << self
     def call(input:, debug: false)
-      ok_pairs = 0
-      input.each_line("\n\n").each_with_index do |block, pair_index|
-        first, second = block.split("\n").map { |b| JSON.parse(b) }
+      packets = input.each_line.map do |line|
+        next if line.strip.empty?
 
-        puts "Index: #{pair_index}"
-        puts "1st: #{first.inspect}"
-        puts "2nd: #{second.inspect}"
+        JSON.parse(line)
+      end.compact
 
-        result = compare(first, second)
-
-        if result
-          puts "  OK!"
-          ok_pairs += pair_index + 1
+      ok_pairs = packets.each_slice(2).to_a.each_with_index.reduce(0) do |acc, ((first, second), pair_index)|
+        if compare(first, second) == -1
+          acc += pair_index + 1
         else
-          puts "  not ok"
+          acc
         end
-
-        puts
-        puts
       end
 
-      [ok_pairs, nil]
+      sorted = (packets + [[[2]], [[6]]]).sort { |a, b| compare(a, b) }
+
+      decoder_key = sorted.each_with_index.reduce(1) do |acc, (packet, index)|
+        if [[[2]], [[6]]].include?(packet)
+          acc *= index + 1
+        else
+          acc
+        end
+      end
+
+      [ok_pairs, decoder_key]
     end
 
     def compare(left, right)
-      puts "Compare: #{left.inspect} - #{right.inspect}"
+      left = left.dup
+      right = right.dup
       right = [right] if left.is_a?(Array) && right.is_a?(Integer)
       left = [left] if left.is_a?(Integer) && right.is_a?(Array)
 
       if left.is_a?(Integer) && right.is_a?(Integer)
-        if left < right
-          true
-        elsif left > right
-          false
-        else
-          nil
-        end
+        return left <=> right
+
       elsif left.is_a?(Array) && right.is_a?(Array)
         while true do
+          ll = left.length
+          rl = right.length
           left_item = left.shift
           right_item = right.shift
 
           result = compare(left_item, right_item)
 
-          return result unless result.nil?
-
-          if left_item.nil? && right_item.nil?
-            return nil
-          elsif left_item.nil?
-            return true
-          elsif right_item.nil?
-            return false
+          if result != 0
+            return result
+          elsif left_item.nil? || right_item.nil?
+            return ll <=> rl
           end
         end
+
       else
-        nil
+        0
       end
     end
   end
@@ -82,12 +80,12 @@ RSpec.describe AoC::Day13 do
   context "with test input" do
     subject { described_class.call(input: Pathname.new(__dir__).join("input_test.txt")) }
 
-    it { expect(subject).to eq([13, nil]) }
+    it { expect(subject).to eq([13, 140]) }
   end
 
   context "with input" do
     subject { described_class.call(input: Pathname.new(__dir__).join("input.txt")) }
 
-    it { expect(subject).to eq([5808, nil]) }
+    it { expect(subject).to eq([5808, 22713]) }
   end
 end
