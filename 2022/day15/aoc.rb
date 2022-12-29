@@ -54,13 +54,10 @@ class AoC::Day15
     end
 
     def record_ranges(x, y, distance, limit: 20)
-      limit_begin = limit.begin
-      limit_end = limit.end
-
       xa = x - distance
       xb = x + distance
 
-      ([-distance, limit_begin - y].max).upto([+distance, limit_end - y].min).each do |dy|
+      ([-distance, limit.begin - y].max).upto([+distance, limit.end - y].min).each do |dy|
         current_y = y + dy
 
         dy_abs = dy.abs
@@ -69,7 +66,7 @@ class AoC::Day15
         e = (xb - dy_abs)
 
         @ranges[current_y] ||= []
-        @ranges[current_y].push(b..e)
+        @ranges[current_y].push([b, e])
       end
     end
 
@@ -117,10 +114,7 @@ class AoC::Day15
       map = Map.new
       puts if debug
 
-      bar = 0
       input.each_line do |line|
-        bar += 1
-        # return if bar >= 3
         STDOUT.write "."
 
         sensor_x, sensor_y, beacon_x, beacon_y = line.match(/Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)/).captures.map(&:to_i)
@@ -134,8 +128,7 @@ class AoC::Day15
           map.set_around(sensor_x, sensor_y, distance)
         end
 
-        # map.record_ranges(sensor_x, sensor_y, distance, limit: 0..max_xy)
-        map.record_ranges(sensor_x, sensor_y, distance, limit: -Float::INFINITY..Float::INFINITY)
+        map.record_ranges(sensor_x, sensor_y, distance, limit: 0..max_xy)
       end
 
       if debug
@@ -150,7 +143,10 @@ class AoC::Day15
         next if key < 0 || key > max_xy
 
         r = map.ranges[key]
-        x = map.merge_overlapping_ranges(r)
+
+        next if r.empty?
+
+        x = map.merge_overlapping_ranges(r.map { |bla| Range.new(*bla)})
 
         if x.length == 2
           tuning_freq = (x.first.end + 1) * 4_000_000 + key
@@ -159,7 +155,7 @@ class AoC::Day15
       end
 
       [
-        map.merge_overlapping_ranges(map.ranges[line_to_count]).sum { |range| range.end - range.begin },
+        map.merge_overlapping_ranges(map.ranges[line_to_count].map { |bla| Range.new(*bla)}).sum { |range| range.end - range.begin },
         tuning_freq,
       ]
     end
@@ -171,7 +167,6 @@ require "bundler/inline"
 gemfile do
   source "https://rubygems.org"
   gem "rspec"
-  gem "ruby-prof"
 end
 
 require "rspec/autorun" if Pathname.new($0).basename.to_s != "rspec"
