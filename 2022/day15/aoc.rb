@@ -60,11 +60,8 @@ class AoC::Day15
       xa = x - distance
       xb = x + distance
 
-      # roll limit check into ranging...
-      (-distance).upto(+distance).each do |dy|
+      ([-distance, limit_begin - y].max).upto([+distance, limit_end - y].min).each do |dy|
         current_y = y + dy
-
-        next if current_y < limit_begin || current_y > limit_end
 
         dy_abs = dy.abs
 
