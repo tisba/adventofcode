@@ -1,0 +1,25 @@
+name: Build 2023
+
+on:
+  push:
+    paths:
+      - ".ruby-version"
+      - ".github/**"
+      - "2023/**"
+
+jobs:
+  ruby:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Run
+        run: |
+          gem install rspec
+          rspec 2023/day*/aoc.rb --format=doc
