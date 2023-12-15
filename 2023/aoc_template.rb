@@ -27,7 +27,10 @@ module AoC::SpecHelper
   def input_test = Pathname.new(__dir__).join("input_test.txt")
 end
 
-RSpec.configure { |c| c.include AoC::SpecHelper }
+RSpec.configure do |c|
+  c.filter_run focus: true
+  c.include AoC::SpecHelper
+end
 
 RSpec.describe AoC::Puzzle do
   context "with test input" do
