@@ -8,7 +8,10 @@ class AoC; end
 class AoC::Puzzle
   class << self
     def call(input:)
-      # implementation starts here…
+      input.each_line.reduce(0) do |sum, line|
+        numbers = line.strip.each_char.select { |c| c.match?(/\d/) }
+        sum += (numbers.first + numbers[-1]).to_i
+      end
     end
   end
 end
@@ -27,18 +30,21 @@ module AoC::SpecHelper
   def input_test = Pathname.new(__dir__).join("input_test.txt")
 end
 
-RSpec.configure { |c| c.include AoC::SpecHelper }
+RSpec.configure do |c|
+  c.filter_run focus: true
+  c.include AoC::SpecHelper
+end
 
 RSpec.describe AoC::Puzzle do
-  context "with test input" do
+  context "with test input", :focus do
     subject { described_class.call(input: input_test) }
 
-    it { expect(subject).to eq([nil, nil]) }
+    it { expect(subject).to eq(142) }
   end
 
   context "with input" do
     subject { described_class.call(input: input) }
 
-    it { expect(subject).to eq([nil, nil]) }
+    it { expect(subject).to eq(54951) }
   end
 end
