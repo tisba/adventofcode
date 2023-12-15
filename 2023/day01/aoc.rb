@@ -36,7 +36,7 @@ RSpec.configure do |c|
 end
 
 RSpec.describe AoC::Puzzle do
-  context "with test input", :focus do
+  context "with test input" do
     subject { described_class.call(input: input_test) }
 
     it { expect(subject).to eq(142) }
